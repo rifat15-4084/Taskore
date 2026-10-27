@@ -24,7 +24,7 @@ const ProjectSchema = new Schema<IProject>(
     deadline: { type: Date },
     archived: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 const Project: Model<IProject> = mongoose.models.Project || mongoose.model<IProject>("Project", ProjectSchema);

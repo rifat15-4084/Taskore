@@ -18,7 +18,7 @@ const ActivityLogSchema = new Schema<IActivityLog>(
     entityId: { type: Schema.Types.ObjectId, required: true },
     meta: { type: Schema.Types.Mixed },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 ActivityLogSchema.index({ createdAt: -1 });

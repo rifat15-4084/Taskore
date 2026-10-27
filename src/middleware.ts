@@ -26,7 +26,9 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get(COOKIE_NAME)?.value;
   const user = token ? await verify(token) : null;
 
-  if (pathname.startsWith("/login")) {
+  // Public auth pages: logged-in visitors are bounced to their own dashboard.
+  // (/api routes are excluded from this matcher and check auth themselves.)
+  if (pathname.startsWith("/login") || pathname.startsWith("/register")) {
     if (user) {
       if (user.role === "admin") {
         return NextResponse.redirect(new URL("/admin/dashboard", request.url));

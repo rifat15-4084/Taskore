@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     const q = searchParams.get("q")?.trim();
     const role = searchParams.get("role");
     const status = searchParams.get("status");
+    const approval = searchParams.get("approval");
 
     const filter: Record<string, unknown> = {};
     if (q) {
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
     if (role === "admin" || role === "member") filter.role = role;
     if (status === "active") filter.isActive = true;
     if (status === "inactive") filter.isActive = false;
+    if (approval === "pending") filter.approvalStatus = "pending";
 
     const users = await User.find(filter)
       .sort({ createdAt: -1 })

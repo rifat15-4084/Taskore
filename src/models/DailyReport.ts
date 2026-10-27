@@ -20,7 +20,7 @@ const DailyReportSchema = new Schema<IDailyReport>(
     blockers: { type: String },
     hoursWorked: { type: Number },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 DailyReportSchema.index({ user: 1, date: 1 }, { unique: true });

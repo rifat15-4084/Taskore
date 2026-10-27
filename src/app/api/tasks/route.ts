@@ -4,7 +4,8 @@ import Task from "@/models/Task";
 import User from "@/models/User";
 import type { ITask } from "@/models/Task";
 import { getCurrentUser } from "@/lib/auth";
-import { isAdmin, canViewProject, getProjectById } from "@/lib/permissions";
+import { isAdmin, canViewProject, getProjectById, validateAssignees } from "@/lib/permissions";
+import type { IProject } from "@/models/Project";
 import { ok, unauthorized, fail, serverError, zodErrors } from "@/lib/api-response";
 import { createTaskSchema } from "@/validators/task";
 import { baseTaskQuery } from "@/services/task-service";
@@ -37,7 +38,16 @@ export async function GET(req: NextRequest) {
 
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
-    if (project && Types.ObjectId.isValid(project)) filter.project = new Types.ObjectId(project);
+    if (project && Types.ObjectId.isValid(project)) {
+      // A member must belong to the project to list its tasks by project id.
+      if (!isAdmin(auth)) {
+        const p = await getProjectById(project);
+        if (!p || !canViewProject(p, auth)) {
+          return fail("You do not have access to that project", 403);
+        }
+      }
+      filter.project = new Types.ObjectId(project);
+    }
     if (assignee && Types.ObjectId.isValid(assignee)) filter.assignees = new Types.ObjectId(assignee);
     if (q) {
       filter.$and = filter.$and ?? [];
@@ -86,6 +96,7 @@ export async function POST(req: NextRequest) {
     await dbConnect();
 
     let projectId: Types.ObjectId | null = null;
+    let projectDoc: IProject | null = null;
     if (data.project) {
       if (!Types.ObjectId.isValid(data.project)) return fail("Invalid project id", 400);
       const project = await getProjectById(data.project);
@@ -93,6 +104,7 @@ export async function POST(req: NextRequest) {
       if (!isAdmin(auth) && !canViewProject(project, auth)) {
         return fail("You do not have access to that project", 403);
       }
+      projectDoc = project;
       projectId = project._id as Types.ObjectId;
     }
 
@@ -100,6 +112,10 @@ export async function POST(req: NextRequest) {
     for (const a of data.assignees ?? []) {
       if (Types.ObjectId.isValid(a)) assigneeIds.add(a);
     }
+
+    // Members may only assign to themselves or project members.
+    const assignError = await validateAssignees(auth, projectDoc, Array.from(assigneeIds));
+    if (assignError) return fail(assignError, 403);
 
     const lastTask = await Task.findOne({ project: projectId, status: data.status })
       .sort({ position: -1 })

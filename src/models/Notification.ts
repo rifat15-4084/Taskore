@@ -18,7 +18,7 @@ const NotificationSchema = new Schema<INotification>(
     link: { type: String },
     read: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 NotificationSchema.index({ user: 1, read: 1, createdAt: -1 });

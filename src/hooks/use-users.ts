@@ -25,6 +25,7 @@ export interface AdminUser {
   email: string;
   role: "admin" | "member";
   isActive: boolean;
+  approvalStatus?: "approved" | "pending" | "rejected";
   avatarColor?: string;
   lastLoginAt?: string | null;
   createdAt: string;
@@ -35,11 +36,17 @@ export interface AdminUsersResponse {
   users: (AdminUser & { _id?: string })[];
 }
 
-export function useAdminUsers(params?: { q?: string; role?: string; status?: string }) {
+export function useAdminUsers(params?: {
+  q?: string;
+  role?: string;
+  status?: string;
+  approval?: string;
+}) {
   const sp = new URLSearchParams();
   if (params?.q) sp.set("q", params.q);
   if (params?.role) sp.set("role", params.role);
   if (params?.status) sp.set("status", params.status);
+  if (params?.approval) sp.set("approval", params.approval);
   const qs = sp.toString();
   return useQuery<AdminUsersResponse>({
     queryKey: ["users", params ?? {}],

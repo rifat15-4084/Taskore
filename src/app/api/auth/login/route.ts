@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       "+passwordHash"
     );
 
-    if (!user || !user.isActive) {
+    if (!user) {
       return NextResponse.json(
         { success: false, message: "Invalid email or password" },
         { status: 401 }
@@ -50,6 +50,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, message: "Invalid email or password" },
         { status: 401 }
+      );
+    }
+
+    // Password is correct — now explain why inactive/pending accounts can't sign in.
+    if (!user.isActive) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Your account is not active yet. Please wait for admin approval.",
+        },
+        { status: 403 }
       );
     }
 

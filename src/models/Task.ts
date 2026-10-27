@@ -50,7 +50,7 @@ const TaskSchema = new Schema<ITask>(
     notifyByEmail: { type: Boolean, default: false },
     comments: [CommentSchema],
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 TaskSchema.index({ project: 1, status: 1, position: 1 });

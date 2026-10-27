@@ -17,6 +17,7 @@ Taskora is a complete, production-quality team task management web app built wit
 - **Two roles:** `admin` and `member`, one login page, separate dashboards (`/admin/*` vs `/app/*`). Authorization is re-checked server-side in every API route.
 - **Member area:** Kanban board (5 columns: To Do, In Progress, In Review, Hold, Completed) with drag-and-drop persisted via `/api/tasks/[id]/move` (optimistic updates + rollback on failure), task drawer, task detail with comments, dashboard, projects, tasks table.
 - **Admin area:** dashboard with charts (recharts), team management (promote/demote, activate/deactivate, reset password), all projects, all tasks with member filter, whole-team board.
+- **Public self-registration:** `/register` ("Create account") creates members only (role is never read from the request body), rate-limited (5/hour/IP), honeypot-protected, names sanitized. Optional admin approval via `REQUIRE_ADMIN_APPROVAL` (pending accounts show a "Pending approval" section on the Team page with Approve/Reject).
 
 ### Notifications & Activity
 - **In-app notifications:** created on task assignment, status changes, comments, project membership, and role changes. Bell in the topbar shows the unread count.
@@ -112,11 +113,22 @@ Open http://localhost:3000
 6. `vercel.json` includes cron for `/api/cron/notify` (Hobby: once per day)
 7. Redeploy
 
+## Manual Test Checklist (self-registration)
+1. Open `/register`, create a new account → lands on `/app` (member dashboard) with an empty board.
+2. As that member, try opening `/admin/dashboard` → redirected/blocked.
+3. As that member, open `/api/users` → `403`; check `/api/users/options` returns only self + project co-members.
+4. Log in as the seeded admin → Team page shows the new user with a "Signed up" date.
+5. Promote the user to admin from the Team page → log out, log in as them → `/admin` works.
+6. Demote them back to member → they can no longer open `/admin`.
+7. Set `REQUIRE_ADMIN_APPROVAL=true`, register another account → "waiting for admin approval", login says "Your account is not active yet."; admin sees the "Pending approval" section → Approve lets them in, Reject blocks them. Set it back to `false` afterwards.
+
 ## Security Notes
 - Passwords hashed with bcryptjs
 - JWT in httpOnly cookie (secure in production, sameSite=lax)
 - All API routes re-authorize server-side
 - Zod validation on all inputs
+- Public registration hardened: role forced server-side, honeypot + rate limit (5/hour/IP), generic duplicate-email message, names sanitized (no HTML)
+- `/api/users/options` scoped: members only see themselves + project co-members
 - `passwordHash` never returned
 - No secrets committed (`.env*.local` ignored)
 - Email failures never fail requests; logged to console

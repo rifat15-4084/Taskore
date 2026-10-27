@@ -157,7 +157,7 @@ export function KanbanBoard({ tasks, onAdd, onOpen }: Props) {
       <EmptyState
         icon={ClipboardList}
         title="No tasks here yet"
-        description="Create your first task to get started, or adjust your filters."
+        description="Create your first task or project to get started, or adjust your filters."
       />
     );
   }

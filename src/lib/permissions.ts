@@ -1,6 +1,7 @@
 import dbConnect from "@/lib/db";
 import Project, { IProject } from "@/models/Project";
 import Task, { ITask } from "@/models/Task";
+import User from "@/models/User";
 import { Types } from "mongoose";
 
 export type AuthUser = {
@@ -64,4 +65,39 @@ export function canEditTask(task: ITask, user: AuthUser) {
 export function canDeleteTask(task: ITask, user: AuthUser) {
   if (isAdmin(user)) return true;
   return task.createdBy.toString() === user.userId;
+}
+
+/**
+ * Validates task assignees server-side.
+ * Members may only assign to themselves or members of the project the task
+ * belongs to; admins may assign anyone. Returns an error message or null.
+ */
+export async function validateAssignees(
+  user: AuthUser,
+  project: IProject | null,
+  assigneeIds: string[]
+): Promise<string | null> {
+  if (assigneeIds.length === 0) return null;
+
+  const uniqueIds = Array.from(new Set(assigneeIds));
+  const existing = await User.find({ _id: { $in: uniqueIds }, isActive: true })
+    .select("_id")
+    .lean();
+  if (existing.length !== uniqueIds.length) {
+    return "One or more assignees do not exist or are inactive";
+  }
+
+  if (isAdmin(user)) return null;
+
+  const allowed = new Set<string>([user.userId]);
+  if (project) {
+    allowed.add(project.owner.toString());
+    for (const m of project.members) allowed.add(m.toString());
+  }
+  for (const id of uniqueIds) {
+    if (!allowed.has(id)) {
+      return "You can only assign tasks to yourself or members of this project";
+    }
+  }
+  return null;
 }

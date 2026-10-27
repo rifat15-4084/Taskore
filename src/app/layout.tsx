@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${plusJakarta.variable} font-sans antialiased min-h-screen`}>
+      <body className={`${plusJakarta.variable} font-sans antialiased min-h-screen`} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <QueryProvider>
             <TooltipProvider>

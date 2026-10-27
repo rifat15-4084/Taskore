@@ -11,6 +11,7 @@ import {
   canDeleteTask,
   getProjectById,
   canViewProject,
+  validateAssignees,
 } from "@/lib/permissions";
 import { ok, unauthorized, forbidden, fail, notFound, serverError, zodErrors } from "@/lib/api-response";
 import { updateTaskSchema } from "@/validators/task";
@@ -101,6 +102,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (data.assignees !== undefined) {
       const ids = new Set<string>();
       for (const a of data.assignees) if (Types.ObjectId.isValid(a)) ids.add(a);
+
+      // Validate against the task's (possibly just-updated) project.
+      const projId = task.project ? String(task.project) : null;
+      const effectiveProject =
+        projId && Types.ObjectId.isValid(projId) ? await getProjectById(projId) : null;
+      const assignError = await validateAssignees(auth, effectiveProject, Array.from(ids));
+      if (assignError) return fail(assignError, 403);
+
       task.assignees = Array.from(ids).map((a) => new Types.ObjectId(a));
     }
     if (data.notifyByEmail !== undefined) task.notifyByEmail = data.notifyByEmail;
